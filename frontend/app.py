@@ -12,7 +12,7 @@ st.set_page_config(
     layout="wide",
 )
 
-# ── Header ─────────────────────────────────────────────────────────────────
+
 st.title("🔍 PipelineDoc AI")
 st.caption(
     "When a data pipeline fails, engineers get a wall of logs. "
@@ -21,7 +21,6 @@ st.caption(
 )
 st.divider()
 
-# ── Sidebar ────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.header("⚙️ Run a Demo")
 
@@ -60,7 +59,6 @@ with st.sidebar:
         "4. **Notification** — posts a plain-English summary to Slack"
     )
 
-# ── Main panel ─────────────────────────────────────────────────────────────
 if run_btn:
     sample_file = SAMPLES / f"{tool}_failure.json"
     if not sample_file.exists():
@@ -92,7 +90,7 @@ if run_btn:
     o = result["owner"]
     notif = result.get("notification", {})
 
-    # ── Status bar ──────────────────────────────────────────────────────────
+    
     sev_colour = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(d["severity"], "⚪")
     conf_colour = {"high": "✅", "medium": "🟡", "low": "⚠️"}.get(d["confidence"], "")
 
@@ -110,7 +108,6 @@ if run_btn:
 
     st.divider()
 
-    # ── Before / After ──────────────────────────────────────────────────────
     col_before, col_after = st.columns(2)
 
     with col_before:
@@ -146,7 +143,6 @@ if run_btn:
 
     st.divider()
 
-    # ── Notification status ─────────────────────────────────────────────────
     if notif.get("mode") == "slack":
         st.markdown(
             f"📨 **Slack message sent** to `{notif.get('channel')}` "
@@ -162,7 +158,7 @@ if run_btn:
         st.json(result)
 
 else:
-    # ── Landing state ───────────────────────────────────────────────────────
+   
     st.markdown("### What problem does this solve?")
     col1, col2 = st.columns(2)
     with col1:

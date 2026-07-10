@@ -63,7 +63,7 @@ async def handle_failure(request: FailureRequest):
 
     async with httpx.AsyncClient(timeout=TIMEOUT) as client:
 
-        # ── Step 1: Parse & enrich logs (must complete before anything else) ──
+      
         t1 = time.perf_counter()
         r = await client.post(
             f"{LOG_COLLECTOR}/collect",
@@ -73,7 +73,7 @@ async def handle_failure(request: FailureRequest):
         normalized = r.json()
         t1 = round(time.perf_counter() - t1, 2)
 
-        # ── Steps 2 & 3 run in parallel: diagnosis doesn't block owner lookup ─
+     
         t23 = time.perf_counter()
         (diagnosis_r, ownership_r) = await asyncio.gather(
             client.post(f"{DIAGNOSIS}/diagnose", json=normalized),
@@ -85,7 +85,7 @@ async def handle_failure(request: FailureRequest):
         owner = ownership_r.json()
         t23 = round(time.perf_counter() - t23, 2)
 
-        # ── Step 4: Notify ────────────────────────────────────────────────────
+       
         t4 = time.perf_counter()
         r = await client.post(
             f"{NOTIFICATION}/notify",

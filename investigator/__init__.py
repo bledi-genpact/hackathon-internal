@@ -4,7 +4,6 @@ from pathlib import Path
 import httpx
 import streamlit as st
 
-# ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="PipelineDoc · AI Failure Diagnosis",
     page_icon="🔍",
@@ -12,7 +11,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Service URLs ──────────────────────────────────────────────────────────────
 import os
 from dotenv import load_dotenv
 
@@ -24,7 +22,6 @@ OWNERSHIP     = os.getenv("OWNERSHIP_URL",       "http://localhost:8003")
 NOTIFICATION  = os.getenv("NOTIFICATION_URL",    "http://localhost:8004")
 TIMEOUT       = httpx.Timeout(120.0)
 
-# ── Sample payloads ───────────────────────────────────────────────────────────
 _SAMPLES_DIR = Path(__file__).parent.parent / "demo" / "sample_logs"
 
 SAMPLES = {
@@ -47,7 +44,6 @@ CONFIDENCE_CONFIG = {
     "low":    {"emoji": "⚠️", "label": "Low"},
 }
 
-# ── Custom CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
 /* Global font */
@@ -200,7 +196,7 @@ section[data-testid="stSidebar"] .stTextArea label {
 </style>
 """, unsafe_allow_html=True)
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
+
 with st.sidebar:
     st.markdown("## 🔍 PipelineDoc")
     st.markdown("---")
@@ -263,7 +259,6 @@ with st.sidebar:
             except Exception:
                 st.error(f"❌ {name} — offline")
 
-# ── Header ────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="header-bar">
   <div>
@@ -275,7 +270,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ── Pipeline stage tracker ────────────────────────────────────────────────────
+
 def stage_strip(states: dict):
     """states: {1: 'pending'|'active'|'done'|'error', ...}"""
     labels = {
@@ -290,7 +285,7 @@ def stage_strip(states: dict):
         boxes += f'<div class="stage-box {css}"><span class="stage-num">{emoji}</span>Agent {i} · {name}</div>'
     st.markdown(f'<div class="pipeline-strip">{boxes}</div>', unsafe_allow_html=True)
 
-# ── Default idle state ────────────────────────────────────────────────────────
+
 if "result" not in st.session_state:
     st.session_state.result = None
 if "stages" not in st.session_state:
@@ -311,7 +306,7 @@ if not run_btn and st.session_state.result is None:
     </div>
     """, unsafe_allow_html=True)
 
-# ── Run the pipeline ──────────────────────────────────────────────────────────
+
 if run_btn and payload is not None:
     st.session_state.result = None
     stages = {1: "pending", 2: "pending", 3: "pending", 4: "pending"}
@@ -341,11 +336,11 @@ if run_btn and payload is not None:
             unsafe_allow_html=True,
         )
 
-    # Wipe initial strip
+    
     stage_placeholder.empty()
 
     with status_placeholder.container():
-        # ── Agent 1: Log Collector ────────────────────────────────────────────
+      
         stages[1] = "active"
         update_strip(stages)
         with st.status("🔍 Agent 1 — Parsing & enriching logs…", expanded=True) as s1:
@@ -374,7 +369,7 @@ if run_btn and payload is not None:
             st.session_state.stages = stages
             st.stop()
 
-        # ── Agent 2: Diagnosis ────────────────────────────────────────────────
+      
         stages[2] = "active"
         update_strip(stages)
         with st.status("🧠 Agent 2 — Running root cause analysis…", expanded=True) as s2:
@@ -402,7 +397,7 @@ if run_btn and payload is not None:
             st.session_state.stages = stages
             st.stop()
 
-        # ── Agent 3: Ownership Router ─────────────────────────────────────────
+     
         stages[3] = "active"
         update_strip(stages)
         with st.status("👤 Agent 3 — Resolving owner…", expanded=True) as s3:
@@ -429,7 +424,7 @@ if run_btn and payload is not None:
             st.session_state.stages = stages
             st.stop()
 
-        # ── Agent 4: Notification ─────────────────────────────────────────────
+       
         stages[4] = "active"
         update_strip(stages)
         with st.status("📣 Agent 4 — Sending Slack notification…", expanded=True) as s4:
@@ -468,7 +463,7 @@ if run_btn and payload is not None:
         }
         st.rerun()
 
-# ── Display results ───────────────────────────────────────────────────────────
+
 if st.session_state.result:
     r = st.session_state.result
     d = r["diagnosis"]
@@ -482,7 +477,7 @@ if st.session_state.result:
 
     st.markdown("---")
 
-    # ── Headline card ─────────────────────────────────────────────────────────
+    
     st.markdown(f"""
     <div class="result-card" style="
         background:{scfg['bg']};
@@ -532,7 +527,7 @@ if st.session_state.result:
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Root cause + fix ──────────────────────────────────────────────────────
+  
     col1, col2 = st.columns(2)
 
     with col1:
@@ -553,7 +548,7 @@ if st.session_state.result:
 
     st.markdown(" ")
 
-    # ── Owner + notification status ───────────────────────────────────────────
+    
     col3, col4 = st.columns([1, 2])
 
     with col3:
@@ -597,7 +592,7 @@ if st.session_state.result:
 
     st.markdown(" ")
 
-    # ── Slack message preview ─────────────────────────────────────────────────
+  
     with st.expander("📱 Slack message preview", expanded=True):
         sev_emoji = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(sev, "⚪")
         conf_label = {"high": "✅ High", "medium": "❓ Medium", "low": "⚠️ Low"}.get(conf, conf)
@@ -630,7 +625,7 @@ if st.session_state.result:
         </div>
         """, unsafe_allow_html=True)
 
-    # ── Expandable raw data ───────────────────────────────────────────────────
+   
     st.markdown(" ")
     with st.expander("🗂️ Raw agent outputs (JSON)"):
         tabs = st.tabs(["Normalized (Agent 1)", "Diagnosis (Agent 2)", "Owner (Agent 3)", "Notification (Agent 4)"])
@@ -643,7 +638,7 @@ if st.session_state.result:
         with tabs[3]:
             st.json(r["notification"])
 
-    # ── Relevant log lines ────────────────────────────────────────────────────
+
     relevant = r["normalized"].get("relevant_logs", [])
     if relevant:
         with st.expander(f"📋 Relevant log lines filtered by Agent 1 ({len(relevant)} lines)"):

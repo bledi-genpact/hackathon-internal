@@ -15,7 +15,7 @@ import json
 import os
 import sys
 
-# Windows consoles default to cp1252; force UTF-8 so em-dashes etc. print.
+
 for _stream in (sys.stdout, sys.stderr):
     try:
         _stream.reconfigure(encoding="utf-8")

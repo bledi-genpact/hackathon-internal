@@ -19,9 +19,7 @@ from enum import Enum
 from typing import Any
 
 
-# ---------------------------------------------------------------------------
-# Shared vocabulary
-# ---------------------------------------------------------------------------
+
 
 class Category(str, Enum):
     """Failure categories shared across triage and investigation.
@@ -31,12 +29,12 @@ class Category(str, Enum):
     still matches ``Category.DEPENDENCY``.
     """
 
-    DEPENDENCY = "dependency"   # a downstream service / DB / external API failed
-    CODE = "code"               # a bug in the job's own code (traceback, bad logic)
-    CONFIG = "config"           # missing/incorrect env var, secret, or config value
-    INFRA = "infra"             # OOM, disk full, node eviction, timeout
-    DATA = "data"               # malformed / unexpected input data
-    UNKNOWN = "unknown"         # triage could not classify — needs investigation
+    DEPENDENCY = "dependency"   
+    CODE = "code"               
+    CONFIG = "config"           
+    INFRA = "infra"             
+    DATA = "data"               
+    UNKNOWN = "unknown"         
 
     @classmethod
     def coerce(cls, value: Any) -> "Category":
@@ -58,9 +56,7 @@ def confidence_label(score: float) -> str:
     return "low"
 
 
-# ---------------------------------------------------------------------------
-# Input contract: what the Triage agent (Person 2) hands us
-# ---------------------------------------------------------------------------
+
 
 @dataclass
 class TriageObject:
@@ -72,13 +68,13 @@ class TriageObject:
 
     incident_id: str
     job_id: str
-    error_signature: str                       # normalized fingerprint of the error
-    category: Category = Category.UNKNOWN       # triage's best guess
-    severity: str = "medium"                    # low | medium | high | critical
-    error_excerpt: str = ""                     # the key error region (Person 1)
-    cleaned_log: str = ""                        # the 100-line cleaned blob (Person 1)
-    escalated_reason: str = ""                  # why triage escalated instead of resolving
-    metadata: dict[str, Any] = field(default_factory=dict)  # service, commit_sha, ts, ...
+    error_signature: str                       
+    category: Category = Category.UNKNOWN       
+    severity: str = "medium"                    
+    error_excerpt: str = ""                     
+    cleaned_log: str = ""                        
+    escalated_reason: str = ""                  
+    metadata: dict[str, Any] = field(default_factory=dict) 
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -89,21 +85,19 @@ class TriageObject:
     def from_dict(cls, d: dict[str, Any]) -> "TriageObject":
         d = dict(d)
         d["category"] = Category.coerce(d.get("category", Category.UNKNOWN))
-        known = {f for f in cls.__dataclass_fields__}  # tolerate extra keys
+        known = {f for f in cls.__dataclass_fields__}  
         return cls(**{k: v for k, v in d.items() if k in known})
 
 
-# ---------------------------------------------------------------------------
-# Output contract: what we hand the Explainer (Person 4)
-# ---------------------------------------------------------------------------
+
 
 @dataclass
 class Evidence:
     """One piece of support for the diagnosis, traceable to the tool that found it."""
 
-    source: str          # tool name that produced this, e.g. "query_past_incidents"
-    detail: str          # human-readable finding
-    snippet: str = ""    # optional raw excerpt (log line, code, status payload)
+    source: str         
+    detail: str          
+    snippet: str = ""   
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -121,16 +115,16 @@ class Diagnosis:
     incident_id: str
     root_cause: str
     category: Category
-    confidence: float                                # 0.0 .. 1.0
-    summary: str = ""                                # one-liner for the message header
+    confidence: float                                
+    summary: str = ""                                
     recommended_fix: str = ""
     suggested_owner: str | None = None
     evidence: list[Evidence] = field(default_factory=list)
     related_past_incidents: list[str] = field(default_factory=list)
     tools_used: list[str] = field(default_factory=list)
-    reasoning_steps: list[str] = field(default_factory=list)   # trace for the demo/audit
-    needs_human: bool = False                        # true when confidence is too low to act
-    model: str = "deterministic-fallback"            # which engine produced this
+    reasoning_steps: list[str] = field(default_factory=list)   
+    needs_human: bool = False                        
+    model: str = "deterministic-fallback"           
     created_at: float = field(default_factory=time.time)
 
     @property
@@ -146,7 +140,7 @@ class Diagnosis:
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Diagnosis":
         d = dict(d)
-        d.pop("confidence_label", None)  # derived, not a field
+        d.pop("confidence_label", None)  
         d["category"] = Category.coerce(d.get("category", Category.UNKNOWN))
         d["evidence"] = [Evidence.from_dict(e) for e in d.get("evidence", [])]
         known = {f for f in cls.__dataclass_fields__}

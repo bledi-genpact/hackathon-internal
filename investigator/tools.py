@@ -41,15 +41,13 @@ class Tool:
         }
 
 
-# ---------------------------------------------------------------------------
-# Mock implementations
-# ---------------------------------------------------------------------------
+
 
 def _search_logs(pattern: str, job_id: str = "", **_: Any) -> dict[str, Any]:
     """Grep the (cleaned) log for lines containing ``pattern``."""
     log = mock_data.FULL_LOGS.get(job_id, "")
     if not log:
-        # Fall back to scanning every known log if the job wasn't specified.
+        
         log = "\n".join(mock_data.FULL_LOGS.values())
     needle = pattern.lower()
     matches = [ln for ln in log.splitlines() if needle in ln.lower()]
@@ -62,7 +60,7 @@ def _read_code(file: str, line: int = 0, context: int = 3, **_: Any) -> dict[str
     key = f"{file}:{line}"
     snippet = mock_data.SOURCE_SNIPPETS.get(key)
     if snippet is None:
-        # try any snippet for the file regardless of line
+       
         for k, v in mock_data.SOURCE_SNIPPETS.items():
             if k.startswith(f"{file}:"):
                 snippet = v
@@ -105,10 +103,7 @@ def _query_past_incidents(error_signature: str, **_: Any) -> dict[str, Any]:
             ]}
 
 
-# ---------------------------------------------------------------------------
-# The special "stop" tool. The model calls this exactly once when it is ready to
-# commit to a verdict — it is the primary stop condition for the LLM loop.
-# ---------------------------------------------------------------------------
+
 
 def _submit_diagnosis(**kwargs: Any) -> dict[str, Any]:
     """Record the final diagnosis. Handled specially by the reasoning loop."""
@@ -148,9 +143,7 @@ SUBMIT_DIAGNOSIS_TOOL = Tool(
 )
 
 
-# ---------------------------------------------------------------------------
-# Investigation tool registry (everything except the stop tool)
-# ---------------------------------------------------------------------------
+
 
 INVESTIGATION_TOOLS: list[Tool] = [
     Tool(
@@ -249,7 +242,7 @@ def execute(name: str, tool_input: dict[str, Any]) -> dict[str, Any]:
         return {"error": f"unknown tool: {name}"}
     try:
         return tool.run(**tool_input)
-    except Exception as exc:  # keep the loop alive; surface the error as data
+    except Exception as exc:  
         return {"error": f"{type(exc).__name__}: {exc}"}
 
 

@@ -31,16 +31,13 @@ from .contracts import Category, Diagnosis, Evidence, TriageObject
 DEFAULT_MODEL = "claude-opus-4-8"
 
 
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
 
 @dataclass
 class InvestigatorConfig:
     model: str = DEFAULT_MODEL
-    max_iterations: int = 6          # hard stop on the agentic loop
-    use_llm: bool | None = None      # None = auto-detect from ANTHROPIC_API_KEY
-    api_key: str | None = None       # explicit override; else env resolution
+    max_iterations: int = 6          
+    use_llm: bool | None = None      
+    api_key: str | None = None       
 
     def llm_available(self) -> bool:
         if self.use_llm is not None:
@@ -48,7 +45,7 @@ class InvestigatorConfig:
         return bool(self.api_key or os.environ.get("ANTHROPIC_API_KEY"))
 
 
-# Internal accumulator shared by both engines while an investigation runs.
+
 @dataclass
 class _Trace:
     tools_used: list[str] = field(default_factory=list)
@@ -107,9 +104,7 @@ def _fmt_args(d: dict[str, Any]) -> str:
     return ", ".join(f"{k}={v!r}" for k, v in d.items())
 
 
-# ---------------------------------------------------------------------------
-# Public entry point
-# ---------------------------------------------------------------------------
+
 
 class Investigator:
     def __init__(self, config: InvestigatorConfig | None = None):
@@ -121,18 +116,18 @@ class Investigator:
         if self.config.llm_available():
             try:
                 return self._investigate_with_llm(triage)
-            except Exception as exc:  # pragma: no cover - network/SDK failures
-                # Degrade gracefully — a diagnosis from rules beats a crash.
+            except Exception as exc:  
+               
                 diag = self._investigate_deterministic(triage)
                 diag.reasoning_steps.insert(
                     0, f"LLM path failed ({type(exc).__name__}: {exc}); used deterministic fallback")
                 return diag
         return self._investigate_deterministic(triage)
 
-    # -- LLM engine --------------------------------------------------------
+    
 
     def _investigate_with_llm(self, triage: TriageObject) -> Diagnosis:
-        import anthropic  # imported lazily so the package works without the SDK
+        import anthropic  
 
         client = anthropic.Anthropic(api_key=self.config.api_key) if self.config.api_key \
             else anthropic.Anthropic()
@@ -154,11 +149,10 @@ class Investigator:
                 tools=tool_schemas,
                 messages=messages,
             )
-            # Preserve full assistant content (incl. thinking + tool_use blocks)
-            # so the next turn is valid.
+            
             messages.append({"role": "assistant", "content": response.content})
 
-            # Capture any thinking summary and text as reasoning trace.
+            
             for block in response.content:
                 if block.type == "thinking" and getattr(block, "thinking", ""):
                     trace.reasoning_steps.append(f"[thinking] {block.thinking.strip()}")
@@ -167,14 +161,14 @@ class Investigator:
 
             tool_uses = [b for b in response.content if b.type == "tool_use"]
             if not tool_uses:
-                # Model stopped without calling a tool. Nudge it once toward a verdict.
+               
                 if response.stop_reason == "end_turn":
                     messages.append({"role": "user", "content":
                                      "Call submit_diagnosis now with your best conclusion."})
                     continue
                 break
 
-            # Execute every requested tool; collect results into ONE user turn.
+            
             tool_results = []
             for tu in tool_uses:
                 if tu.name == "submit_diagnosis":
@@ -198,13 +192,13 @@ class Investigator:
         if submitted is not None:
             return self._finalize(triage, trace, submitted, model=self.config.model)
 
-        # Hit the iteration cap without a verdict — synthesize one and flag it.
+       
         trace.reasoning_steps.append(
             f"reached max_iterations ({self.config.max_iterations}) without submit_diagnosis")
         return self._synthesize_from_trace(triage, trace, model=self.config.model,
                                             forced=True)
 
-    # -- Deterministic engine ---------------------------------------------
+   
 
     def _investigate_deterministic(self, triage: TriageObject) -> Diagnosis:
         """Rule-based investigation: a fixed, sensible tool order per category."""
@@ -212,15 +206,15 @@ class Investigator:
         md = triage.metadata or {}
         category = self._infer_category(triage)
 
-        # 1. Always consult memory first.
+        
         self._call(trace, "query_past_incidents",
                    {"error_signature": triage.error_signature})
 
-        # 2. Always pull the failing log lines.
+        
         self._call(trace, "search_logs",
                    {"pattern": self._log_needle(triage), "job_id": triage.job_id})
 
-        # 3. Category-specific corroboration.
+       
         if category == Category.DEPENDENCY:
             dep = md.get("dependency") or self._guess_dependency(triage)
             if dep:
@@ -232,8 +226,8 @@ class Investigator:
             if md.get("service"):
                 self._call(trace, "get_recent_deploys", {"service": md["service"]})
         elif category == Category.CONFIG:
-            # search_logs already surfaced the missing var; deploy history often
-            # explains *why* it went missing (a secrets migration).
+           
+          
             if md.get("service"):
                 self._call(trace, "get_recent_deploys", {"service": md["service"]})
 
@@ -245,7 +239,7 @@ class Investigator:
         trace.record_tool(name, tool_input, result)
         return result
 
-    # -- Shared synthesis / finalization ----------------------------------
+    
 
     def _finalize(self, triage: TriageObject, trace: _Trace,
                   submitted: dict[str, Any], model: str) -> Diagnosis:
@@ -307,7 +301,7 @@ class Investigator:
             pinpointed_location=trace.pinpointed_location,
         )
         if forced:
-            heuristic = min(heuristic, 0.5)  # we bailed out; don't over-claim
+            heuristic = min(heuristic, 0.5) 
         needs_human = heuristic < 0.45 or category == Category.UNKNOWN
 
         trace.reasoning_steps.append(f"synthesized diagnosis; confidence={heuristic:.2f}")
@@ -328,7 +322,7 @@ class Investigator:
             model=model,
         )
 
-    # -- Small heuristics --------------------------------------------------
+    
 
     def _rule_synthesis(self, triage: TriageObject, trace: _Trace,
                         category: Category) -> tuple[str, str, str | None]:
@@ -398,7 +392,7 @@ class Investigator:
         return None
 
     def _best_past_incident(self, trace: _Trace) -> dict[str, Any] | None:
-        # The evidence snippet holds the fix; re-query for the structured record.
+       
         if not trace.related_past_incidents:
             return None
         from . import mock_data
@@ -418,7 +412,7 @@ def _one_liner(text: str) -> str:
     return text if len(text) <= 120 else text[:117] + "..."
 
 
-# Convenience functional API --------------------------------------------------
+
 
 def investigate(triage: TriageObject, **config_kwargs: Any) -> Diagnosis:
     """One-call helper: ``investigate(triage_object)`` -> ``Diagnosis``."""

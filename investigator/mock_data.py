@@ -16,11 +16,9 @@ from __future__ import annotations
 from .contracts import Category, TriageObject
 
 
-# ---------------------------------------------------------------------------
-# Backing "systems" the mock tools read from. Keyed by service where it matters.
-# ---------------------------------------------------------------------------
 
-# Full logs (the mock search_logs greps these). In production this is Person 1's store.
+
+
 FULL_LOGS: dict[str, str] = {
     "checkout-nightly": """
 2026-07-09T02:14:01Z INFO  starting checkout reconciliation job run=8842
@@ -50,7 +48,7 @@ AttributeError: 'NoneType' object has no attribute 'spend'
 """.strip(),
 }
 
-# Source files the mock read_code returns from. Keyed by "file:line".
+
 SOURCE_SNIPPETS: dict[str, str] = {
     "/app/report/build.py:88": (
         "  85  def summarize(users):\n"
@@ -61,7 +59,7 @@ SOURCE_SNIPPETS: dict[str, str] = {
     ),
 }
 
-# Deploy history the mock get_recent_deploys returns. Keyed by service.
+
 DEPLOY_HISTORY: dict[str, list[dict]] = {
     "report-builder": [
         {"commit": "a1b9f3c", "author": "priya", "when": "2026-07-09T01:40:00Z",
@@ -79,15 +77,14 @@ DEPLOY_HISTORY: dict[str, list[dict]] = {
     ],
 }
 
-# Service / dependency health the mock check_dependency_health returns.
+
 SERVICE_HEALTH: dict[str, dict] = {
     "orders-db": {"status": "down", "since": "2026-07-09T02:10:00Z",
                   "detail": "primary unreachable; failover did not promote replica"},
     "sendgrid": {"status": "healthy", "since": "2026-07-01T00:00:00Z", "detail": "ok"},
 }
 
-# Person 5's memory store, stubbed. The mock query_past_incidents matches on
-# substrings of the error signature. In production this is a SQLite table.
+
 PAST_INCIDENTS: list[dict] = [
     {
         "id": "INC-3301",
@@ -120,9 +117,8 @@ PAST_INCIDENTS: list[dict] = [
 ]
 
 
-# ---------------------------------------------------------------------------
-# Three demo TriageObjects — one per category. Mirrors Person 5's broken jobs.
-# ---------------------------------------------------------------------------
+
+
 
 def demo_triage_objects() -> dict[str, TriageObject]:
     return {
@@ -158,7 +154,7 @@ def demo_triage_objects() -> dict[str, TriageObject]:
             incident_id="INC-9003",
             job_id="email-digest",
             error_signature="KeyError: 'SENDGRID_API_KEY' missing environment variable",
-            category=Category.UNKNOWN,  # triage wasn't sure — good escalation test
+            category=Category.UNKNOWN,  
             severity="medium",
             error_excerpt="missing required environment variable SENDGRID_API_KEY",
             cleaned_log=FULL_LOGS["email-digest"],

@@ -72,7 +72,7 @@ def _build_blocks(d: DiagnosisResult, owner: OwnerInfo) -> list:
             "text": {"type": "plain_text", "text": f"{emoji}  Pipeline Failure — {d.job_name}"},
         },
         {"type": "divider"},
-        # Metadata grid — uses all enriched fields from Agents 1 & 2
+       
         {
             "type": "section",
             "fields": [
@@ -94,7 +94,7 @@ def _build_blocks(d: DiagnosisResult, owner: OwnerInfo) -> list:
             "text": {"type": "mrkdwn", "text": f"*:wrench: Suggested Fix*\n{d.suggested_fix}"},
         },
         {"type": "divider"},
-        # Footer — confidence, run ID, timestamp
+      
         {
             "type": "context",
             "elements": [

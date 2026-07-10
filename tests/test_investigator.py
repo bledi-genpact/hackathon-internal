@@ -34,11 +34,11 @@ class AcceptanceTest(unittest.TestCase):
                 diag = _agent().investigate(triage)
 
                 self.assertIsInstance(diag, Diagnosis)
-                # at least two DISTINCT investigation tools were called
+                
                 distinct = {t for t in diag.tools_used if t != "submit_diagnosis"}
                 self.assertGreaterEqual(len(distinct), 2,
                                         f"only used {diag.tools_used}")
-                # valid Diagnosis: required fields populated and sane
+                
                 self.assertEqual(diag.incident_id, triage.incident_id)
                 self.assertTrue(diag.root_cause)
                 self.assertTrue(diag.recommended_fix)
@@ -60,7 +60,7 @@ class CategoryTest(unittest.TestCase):
                 self.assertEqual(diag.category, cat)
 
     def test_unknown_category_is_inferred_not_left_unknown(self):
-        # The 'config' scenario arrives as UNKNOWN from triage; we must resolve it.
+      
         triage = demo_triage_objects()["config"]
         self.assertEqual(triage.category, Category.UNKNOWN)
         diag = _agent().investigate(triage)
@@ -72,7 +72,7 @@ class PastIncidentTest(unittest.TestCase):
         diag = _agent().investigate(demo_triage_objects()["dependency"])
         self.assertTrue(diag.related_past_incidents)
         self.assertIn("query_past_incidents", diag.tools_used)
-        # matched memory + a 'down' dependency -> should be high confidence
+       
         self.assertGreaterEqual(diag.confidence, 0.75)
         self.assertFalse(diag.needs_human)
 
@@ -110,7 +110,7 @@ class ContractTest(unittest.TestCase):
     def test_diagnosis_roundtrip(self):
         diag = _agent().investigate(demo_triage_objects()["code"])
         d = diag.to_dict()
-        # JSON-facing extras present
+       
         self.assertIn("confidence_label", d)
         again = Diagnosis.from_dict(d)
         self.assertEqual(again.incident_id, diag.incident_id)
@@ -129,7 +129,7 @@ class FunctionalApiTest(unittest.TestCase):
         self.assertIsInstance(diag, Diagnosis)
 
 
-# --- LLM engine, driven by a fake Anthropic client (no network) -------------
+
 
 class _Block:
     """Stand-in for an SDK content block (thinking / text / tool_use)."""
@@ -168,7 +168,7 @@ class LLMEngineTest(unittest.TestCase):
         sys.modules["anthropic"] = fake
 
     def test_llm_loop_dispatches_tools_and_finalizes(self):
-        # Scripted conversation: model investigates twice, then submits.
+       
         scripted = [
             _Resp([_Block("thinking", thinking="checking memory first"),
                    _Block("tool_use", name="query_past_incidents",
@@ -196,14 +196,14 @@ class LLMEngineTest(unittest.TestCase):
         self.assertEqual(diag.category, Category.DEPENDENCY)
         self.assertIn("query_past_incidents", diag.tools_used)
         self.assertIn("search_logs", diag.tools_used)
-        # confidence is BLENDED (model 0.9 + evidence heuristic), not passed through
+        
         self.assertGreater(diag.confidence, 0.5)
         self.assertLessEqual(diag.confidence, 0.98)
-        # thinking + text captured into the audit trail
+        
         self.assertTrue(any("checking memory" in s for s in diag.reasoning_steps))
 
     def test_llm_hitting_iteration_cap_still_returns_diagnosis(self):
-        # Model never submits — loops forever asking for the same tool.
+       
         loop = _Resp([_Block("tool_use", name="query_past_incidents",
                              id="t", input={"error_signature": "connection refused"})])
         self._install_fake_anthropic([loop] * 10)
@@ -215,7 +215,7 @@ class LLMEngineTest(unittest.TestCase):
             sys.modules.pop("anthropic", None)
 
         self.assertIsInstance(diag, Diagnosis)
-        self.assertTrue(diag.root_cause)  # synthesized from evidence, not empty
+        self.assertTrue(diag.root_cause)  
         self.assertTrue(any("max_iterations" in s for s in diag.reasoning_steps))
 
 

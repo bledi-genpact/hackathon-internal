@@ -10,13 +10,13 @@ def parse_llm_json(text: str) -> dict:
     """
     text = text.strip()
 
-    # Fast path — response is already clean JSON
+    
     try:
         return json.loads(text)
     except json.JSONDecodeError:
         pass
 
-    # Find the first {...} block anywhere in the text (handles fences + prose)
+   
     match = re.search(r'\{[\s\S]*\}', text)
     if match:
         try:

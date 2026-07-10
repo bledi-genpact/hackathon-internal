@@ -28,27 +28,27 @@ def heuristic_score(
     pinpointed_location: bool,
 ) -> float:
     """Evidence-only confidence in 0.05..0.98."""
-    score = 0.15  # a bare guess with no evidence floor
+    score = 0.15  
 
     distinct_investigation_tools = {
         t for t in tools_used if t != "submit_diagnosis"
     }
-    # More corroboration from different angles -> more confidence.
+    .
     score += min(len(distinct_investigation_tools), 3) * 0.12
 
-    # Any evidence at all beats none.
+   
     if evidence:
         score += 0.08
 
-    # A matching past incident is the single strongest signal.
+    
     if matched_past_incident:
         score += 0.30
 
-    # Pinpointing the exact code line / bad deploy / dead dependency.
+   
     if pinpointed_location:
         score += 0.18
 
-    # We never resolved the category -> cap our certainty.
+   
     if category == Category.UNKNOWN:
         score = min(score, 0.40)
 
