@@ -1,0 +1,21 @@
+{
+  "dag_id": "etl_salesforce_daily",
+  "task_id": "load_opportunities",
+  "run_id": "scheduled__2024-06-15T02:00:00+00:00",
+  "execution_date": "2024-06-15T02:00:00+00:00",
+  "environment": "production",
+  "exception": "snowflake.connector.errors.DatabaseError: 250001 (08001): Failed to connect to DB: account.snowflakecomputing.com:443. Snowflake could not decode the public key provided. Please contact Snowflake support.",
+  "log": [
+    "[2024-06-15 02:01:43,112] {taskinstance.py:1206} INFO - Dependencies all met for <TaskInstance: etl_salesforce_daily.load_opportunities scheduled__2024-06-15T02:00:00+00:00 [queued]>",
+    "[2024-06-15 02:01:43,204] {taskinstance.py:1406} INFO - Starting attempt 1 of 3",
+    "[2024-06-15 02:01:43,287] {taskinstance.py:1427} INFO - Executing <Task(PythonOperator): load_opportunities> on 2024-06-15 02:00:00+00:00",
+    "[2024-06-15 02:01:44,019] {base_hook.py:88} INFO - Using connection to: id: snowflake_prod",
+    "[2024-06-15 02:01:44,521] {snowflake_hook.py:236} INFO - Connecting to Snowflake account: ACME_PROD",
+    "[2024-06-15 02:01:47,813] {taskinstance.py:1782} ERROR - Task failed with exception",
+    "Traceback (most recent call last):",
+    "  File \"/usr/local/lib/python3.10/site-packages/snowflake/connector/network.py\", line 456, in _post_request\",",
+    "    raise DatabaseError(msg=msg, errno=250001)",
+    "snowflake.connector.errors.DatabaseError: 250001 (08001): Failed to connect to DB: acme-prod.snowflakecomputing.com:443. Snowflake could not decode the public key provided. Please contact Snowflake support.",
+    "[2024-06-15 02:01:47,901] {taskinstance.py:1806} INFO - Marking task as FAILED."
+  ]
+}

@@ -1,0 +1,34 @@
+# Map pipeline / job names to owners.
+# Pattern matching is case-insensitive with * wildcard at the end.
+# First match wins — put specific patterns before broad ones.
+
+default_owner:
+  name: "Data Team On-Call"
+  slack_handle: "@data-oncall"
+  team: "Data Engineering"
+
+pipelines:
+  - pattern: "finance_*"
+    name: "Alice Johnson"
+    slack_handle: "@alice.johnson"
+    team: "Finance Analytics"
+
+  - pattern: "marketing_*"
+    name: "Bob Smith"
+    slack_handle: "@bob.smith"
+    team: "Marketing Analytics"
+
+  - pattern: "etl_salesforce*"
+    name: "Dave Park"
+    slack_handle: "@dave.park"
+    team: "Revenue Ops"
+
+  - pattern: "etl_stripe*"
+    name: "Eve Torres"
+    slack_handle: "@eve.torres"
+    team: "Finance"
+
+  - pattern: "hubspot*"
+    name: "Bob Smith"
+    slack_handle: "@bob.smith"
+    team: "Marketing Analytics"

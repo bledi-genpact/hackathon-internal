@@ -1,0 +1,208 @@
+import streamlit as st
+import httpx
+import json
+from pathlib import Path
+
+ORCHESTRATOR = "http://localhost:8000"
+SAMPLES = Path(__file__).parent.parent / "demo" / "sample_logs"
+
+st.set_page_config(
+    page_title="PipelineDoc AI",
+    page_icon="🔍",
+    layout="wide",
+)
+
+# ── Header ─────────────────────────────────────────────────────────────────
+st.title("🔍 PipelineDoc AI")
+st.caption(
+    "When a data pipeline fails, engineers get a wall of logs. "
+    "PipelineDoc reads them, figures out what went wrong, and explains it in plain English — "
+    "then tags the right person on Slack."
+)
+st.divider()
+
+# ── Sidebar ────────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.header("⚙️ Run a Demo")
+
+    tool = st.selectbox(
+        "Pipeline Tool",
+        ["dbt", "airflow", "fivetran"],
+        format_func=lambda t: {"dbt": "🟠 dbt Cloud", "airflow": "🌀 Airflow / Astronomer",
+                                "fivetran": "🔵 Fivetran"}[t],
+    )
+    channel = st.text_input("Slack Channel", value="#data-alerts")
+    run_btn = st.button("🚀 Simulate Failure", use_container_width=True, type="primary")
+
+    st.divider()
+    st.subheader("🩺 Service Health")
+    if st.button("Check All Services", use_container_width=True):
+        services = [
+            ("Orchestrator",     8000),
+            ("Log Collector",    8001),
+            ("Diagnosis",        8002),
+            ("Ownership Router", 8003),
+            ("Notification",     8004),
+        ]
+        for name, port in services:
+            try:
+                r = httpx.get(f"http://localhost:{port}/health", timeout=3)
+                st.success(f"{name} ✓")
+            except Exception:
+                st.error(f"{name} ✗ offline")
+
+    st.divider()
+    st.markdown(
+        "**How the pipeline works**\n\n"
+        "1. **Log Collector** — parses the raw webhook and uses Claude to filter noise and classify the error\n"
+        "2. **Diagnosis** — Claude performs deep root cause analysis\n"
+        "3. **Ownership Router** — maps the job to the right engineer\n"
+        "4. **Notification** — posts a plain-English summary to Slack"
+    )
+
+# ── Main panel ─────────────────────────────────────────────────────────────
+if run_btn:
+    sample_file = SAMPLES / f"{tool}_failure.json"
+    if not sample_file.exists():
+        st.error(f"Sample file not found: {sample_file}")
+        st.stop()
+
+    raw_payload = json.loads(sample_file.read_text())
+
+    with st.spinner("Analyzing failure... (two Claude calls in the pipeline, ~20-30 seconds)"):
+        try:
+            resp = httpx.post(
+                f"{ORCHESTRATOR}/failure",
+                json={"tool": tool, "raw_payload": raw_payload, "slack_channel": channel},
+                timeout=120,
+            )
+            resp.raise_for_status()
+            result = resp.json()
+        except httpx.ConnectError:
+            st.error(
+                "Cannot reach the orchestrator at localhost:8000. "
+                "Run **start_all.bat** first and wait a few seconds."
+            )
+            st.stop()
+        except httpx.HTTPStatusError as e:
+            st.error(f"Pipeline error {e.response.status_code}: {e.response.text}")
+            st.stop()
+
+    d = result["diagnosis"]
+    o = result["owner"]
+    notif = result.get("notification", {})
+
+    # ── Status bar ──────────────────────────────────────────────────────────
+    sev_colour = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(d["severity"], "⚪")
+    conf_colour = {"high": "✅", "medium": "🟡", "low": "⚠️"}.get(d["confidence"], "")
+
+    st.success(
+        f"Pipeline diagnosed! "
+        + ("Slack notification sent." if notif.get("mode") == "slack"
+           else "Notification printed to console (no Slack token).")
+    )
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Severity",    f"{sev_colour} {d['severity'].capitalize()}")
+    c2.metric("Confidence",  f"{conf_colour} {d['confidence'].capitalize()}")
+    c3.metric("Owner",       o["slack_handle"])
+    c4.metric("Error Type",  d.get("error_category", "Unknown"))
+
+    st.divider()
+
+    # ── Before / After ──────────────────────────────────────────────────────
+    col_before, col_after = st.columns(2)
+
+    with col_before:
+        st.subheader("❌ What the machine said")
+        st.caption("Raw error message — what an engineer would normally wake up to")
+
+        st.error(d["error_message"])
+
+        relevant = d.get("relevant_logs", [])
+        if relevant:
+            st.caption(f"Relevant log lines extracted by Agent 1 ({len(relevant)} lines, noise removed):")
+            st.code("\n".join(relevant), language="text")
+        else:
+            st.code(d.get("log_excerpt", "")[:800], language="text")
+
+        if d.get("affected_component"):
+            st.caption(f"**Affected component:** `{d['affected_component']}`")
+
+    with col_after:
+        st.subheader("✅ What it means")
+        st.caption("Plain-English explanation generated by Agent 2 — ready to act on")
+
+        st.info(d["root_cause"])
+
+        st.subheader("🔧 Suggested Fix")
+        st.success(d["suggested_fix"])
+
+        st.caption(
+            f"**Owner:** {o['name']} ({o['slack_handle']})  ·  "
+            f"**Team:** {o.get('team', 'Unknown')}  ·  "
+            f"**Run ID:** `{d.get('run_id') or 'N/A'}`"
+        )
+
+    st.divider()
+
+    # ── Notification status ─────────────────────────────────────────────────
+    if notif.get("mode") == "slack":
+        st.markdown(
+            f"📨 **Slack message sent** to `{notif.get('channel')}` "
+            f"(ts: `{notif.get('ts')}`)"
+        )
+    else:
+        st.markdown(
+            "📋 **Console fallback** — no `SLACK_BOT_TOKEN` configured. "
+            "The full message was printed in the notification service terminal window."
+        )
+
+    with st.expander("🔬 Full Pipeline Output (JSON)"):
+        st.json(result)
+
+else:
+    # ── Landing state ───────────────────────────────────────────────────────
+    st.markdown("### What problem does this solve?")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(
+            "**Without PipelineDoc AI**\n\n"
+            "An engineer wakes up to an alert at 2 AM. They open Airflow, "
+            "dig through hundreds of log lines, mentally parse a cryptic Snowflake error code, "
+            "figure out whose job this is, and Slack them — maybe 20–30 minutes later.\n\n"
+            "Junior engineers often can't do this at all."
+        )
+    with col2:
+        st.markdown(
+            "**With PipelineDoc AI**\n\n"
+            "The team Slack channel gets a message: *'The `finance_monthly_close` dbt job failed "
+            "because the source table `PROD_DB.RAW.STRIPE_CHARGES` doesn't exist — "
+            "likely the Fivetran Stripe connector failed overnight. "
+            "Check the connector, then re-run the job.'* "
+            "@alice.johnson is tagged. Done in seconds."
+        )
+
+    st.divider()
+    st.info("👈 Select a pipeline tool in the sidebar and click **Simulate Failure** to see it in action.")
+
+    st.markdown("### Demo scenarios")
+    dcol1, dcol2, dcol3 = st.columns(3)
+    with dcol1:
+        st.markdown(
+            "**🟠 dbt Cloud**\n\n"
+            "A `finance_monthly_close` job fails because a source table "
+            "`PROD_DB.RAW.STRIPE_CHARGES` doesn't exist in Snowflake."
+        )
+    with dcol2:
+        st.markdown(
+            "**🌀 Airflow**\n\n"
+            "The `etl_salesforce_daily` DAG fails with a Snowflake authentication "
+            "error — the connection key can't be decoded."
+        )
+    with dcol3:
+        st.markdown(
+            "**🔵 Fivetran**\n\n"
+            "The HubSpot CRM connector hits the API rate limit (10,000 req/day) "
+            "and stops syncing contacts, deals, and companies."
+        )

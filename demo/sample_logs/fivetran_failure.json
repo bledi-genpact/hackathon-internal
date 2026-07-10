@@ -1,0 +1,32 @@
+{
+  "runId": 987654,
+  "jobName": "finance_monthly_close",
+  "environmentName": "production",
+  "runStartedAt": "2024-06-15T03:15:22Z",
+  "statusMessage": "Runtime Error",
+  "runSteps": [
+    {
+      "name": "Run dbt models",
+      "status": "error",
+      "statusMessage": "Database Error in model revenue_recognition (models/finance/revenue_recognition.sql)",
+      "logs": [
+        "Running with dbt=1.7.4",
+        "Found 87 models, 134 tests, 12 snapshots",
+        "Concurrency: 4 threads",
+        "",
+        "1 of 12 START sql table model finance.stg_invoices ........................... [RUN]",
+        "1 of 12 OK created sql table model finance.stg_invoices ...................... [SELECT 45231 in 8.43s]",
+        "2 of 12 START sql table model finance.revenue_recognition ................... [RUN]",
+        "2 of 12 ERROR creating sql table model finance.revenue_recognition ........... [ERROR in 1.23s]",
+        "",
+        "Database Error in model revenue_recognition (models/finance/revenue_recognition.sql)",
+        "  002003 (42S02): SQL compilation error:",
+        "  Object 'PROD_DB.RAW.STRIPE_CHARGES' does not exist or not authorized.",
+        "",
+        "Finished running 2 models in 0 hours 0 minutes and 9.66 seconds (9.66s).",
+        "Encountered 1 error and 0 warnings.",
+        "Done. PASS=1 WARN=0 ERROR=1 SKIP=11 TOTAL=12"
+      ]
+    }
+  ]
+}
